@@ -1,23 +1,30 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, getTableColumns } from "drizzle-orm";
 import { db } from "@/db";
-import { classSchedules } from "@/db/schema";
+import { classSchedules, subjects } from "@/db/schema";
 import type {
   CreateScheduleInput,
   UpdateScheduleInput,
 } from "@/schema/schedule-schema";
 
+const selection = {
+  ...getTableColumns(classSchedules),
+  subjectName: subjects.name,
+};
+
 export class ScheduleRepository {
   findAll(userId: string) {
     return db
-      .select()
+      .select(selection)
       .from(classSchedules)
+      .leftJoin(subjects, eq(classSchedules.subjectId, subjects.id))
       .where(eq(classSchedules.userId, userId));
   }
 
   async findById(id: string, userId: string) {
     const [schedule] = await db
-      .select()
+      .select(selection)
       .from(classSchedules)
+      .leftJoin(subjects, eq(classSchedules.subjectId, subjects.id))
       .where(
         and(eq(classSchedules.id, id), eq(classSchedules.userId, userId)),
       )

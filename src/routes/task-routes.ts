@@ -23,6 +23,7 @@ const student = [
 ];
 
 router.get("/v1/get-tasks", ...student, taskController.getTasks);
+router.get("/v1/productivity", ...student, taskController.getProductivity);
 router.get(
   "/v1/get-task/:id",
   ...student,

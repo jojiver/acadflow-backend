@@ -6,6 +6,7 @@ import {
   createTaskService,
   updateTaskService,
   deleteTaskService,
+  getProductivityService,
 } from "@/services/tasks/task-service";
 import { createTaskSchema, updateTaskSchema } from "@/schema/task-schema";
 
@@ -46,6 +47,15 @@ export class TaskController {
   public deleteTask = async (req: Request, res: Response) => {
     const userId = (req as AuthenticatedRequest).user!.sub;
     const result = await deleteTaskService(req.params.id as string, userId);
+    return res.status(result.code).json(result);
+  };
+
+  public getProductivity = async (req: Request, res: Response) => {
+    const userId = (req as AuthenticatedRequest).user!.sub;
+    const result = await getProductivityService(
+      userId,
+      typeof req.query.period === "string" ? req.query.period : undefined,
+    );
     return res.status(result.code).json(result);
   };
 }

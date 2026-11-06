@@ -1,14 +1,21 @@
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, getTableColumns, inArray } from "drizzle-orm";
 import { db } from "@/db";
-import { taskSteps, tasks } from "@/db/schema";
+import { subjects, taskSteps, tasks } from "@/db/schema";
 import type {
   CreateTaskInput,
   TaskStepInput,
   UpdateTaskInput,
 } from "@/schema/task-schema";
 
-type TaskRow = typeof tasks.$inferSelect;
+type TaskRow = typeof tasks.$inferSelect & {
+  subjectName: string | null;
+};
 type StepRow = typeof taskSteps.$inferSelect;
+
+const selection = {
+  ...getTableColumns(tasks),
+  subjectName: subjects.name,
+};
 
 async function attachSteps(rows: TaskRow[]) {
   if (rows.length === 0) return [];
@@ -29,20 +36,22 @@ async function attachSteps(rows: TaskRow[]) {
 
 export class TaskRepository {
   async findAll(userId: string) {
-    const rows = await db
-      .select()
+    const rows = (await db
+      .select(selection)
       .from(tasks)
-      .where(eq(tasks.userId, userId));
+      .leftJoin(subjects, eq(tasks.subjectId, subjects.id))
+      .where(eq(tasks.userId, userId))) as TaskRow[];
 
     return attachSteps(rows);
   }
 
   async findById(id: string, userId: string) {
-    const [row] = await db
-      .select()
+    const [row] = (await db
+      .select(selection)
       .from(tasks)
+      .leftJoin(subjects, eq(tasks.subjectId, subjects.id))
       .where(and(eq(tasks.id, id), eq(tasks.userId, userId)))
-      .limit(1);
+      .limit(1)) as TaskRow[];
 
     if (!row) return undefined;
     const [task] = await attachSteps([row]);

@@ -1,13 +1,51 @@
 import { SubjectRepository } from "@/repositories/subject-repository";
+import { TaskRepository } from "@/repositories/task-repository";
+import { computePriority, daysUntil } from "@/lib/priority";
+import type { Subject } from "@/db/schema";
 import type {
   CreateSubjectInput,
   UpdateSubjectInput,
 } from "@/schema/subject-schema";
 
+async function withSummary(subjects: Subject[], userId: string) {
+  const tasks = await new TaskRepository().findAll(userId);
+  const now = new Date();
+
+  return subjects.map((subject) => {
+    const subjectTasks = tasks.filter((task) => task.subjectId === subject.id);
+    const total = subjectTasks.length;
+    const progress =
+      total === 0
+        ? 0
+        : Math.round(
+            subjectTasks.reduce(
+              (sum, task) => sum + (task.completedAt ? 100 : task.progress),
+              0,
+            ) / total,
+          );
+    const dueNow = subjectTasks.filter((task) => {
+      if (task.completedAt) return false;
+      const days = daysUntil(task.deadline, now);
+      return days >= 0 && days <= 7;
+    }).length;
+    const levels = subjectTasks.map(
+      (task) => computePriority(task, now).level,
+    );
+    const priority = levels.includes("High")
+      ? "High"
+      : levels.includes("Medium")
+        ? "Medium"
+        : "Low";
+
+    return { ...subject, tasks: total, dueNow, progress, priority };
+  });
+}
+
 export async function getSubjectsService(userId: string) {
   try {
     const subjects = await new SubjectRepository().findAll(userId);
-    return { code: 200, status: "success", data: { subjects } };
+    const enriched = await withSummary(subjects, userId);
+    return { code: 200, status: "success", data: { subjects: enriched } };
   } catch (error) {
     console.error("getSubjectsService Error", error);
     return { code: 500, status: "error", message: "Unable to load subjects" };

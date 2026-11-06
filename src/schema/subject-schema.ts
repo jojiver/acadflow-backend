@@ -6,6 +6,8 @@ const subjectBody = z.object({
   name: text,
   instructor: z.string().trim().optional(),
   room: z.string().trim().optional(),
+  schedule: z.string().trim().optional(),
+  category: z.enum(["Core", "Elective", "Archived"]).optional(),
   color: z.string().trim().optional(),
 });
 

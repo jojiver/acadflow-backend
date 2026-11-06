@@ -72,6 +72,8 @@ export const subjects = pgTable(
     name: text().notNull(),
     instructor: text(),
     room: text(),
+    schedule: text(),
+    category: text().default("Core").notNull(),
     color: text(),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "string" })
       .defaultNow()
